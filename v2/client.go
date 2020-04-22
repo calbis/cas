@@ -18,6 +18,7 @@ type Options struct {
 	URLScheme    URLScheme    // Custom url scheme, can be used to modify the request urls for the client
 	Cookie       *http.Cookie // http.Cookie options, uses Path, Domain, MaxAge, HttpOnly, & Secure
 	SessionStore SessionStore
+	ServiceURL   *url.URL // URL of the service, used to override the requestURL when the app is behind a proxy
 }
 
 // Client implements the main protocol
@@ -31,6 +32,8 @@ type Client struct {
 	sendService bool
 
 	stValidator *ServiceTicketValidator
+
+	serviceUrl *url.URL
 }
 
 // NewClient creates a Client with the provided Options.
@@ -86,6 +89,7 @@ func NewClient(options *Options) *Client {
 		sessions:    sessions,
 		sendService: options.SendService,
 		stValidator: NewServiceTicketValidator(client, options.URL),
+		serviceUrl:  options.ServiceURL,
 	}
 }
 
@@ -131,9 +135,14 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	service, err := requestURL(r)
-	if err != nil {
-		return "", err
+	var service *url.URL
+	if c.serviceUrl != nil {
+		service = c.serviceUrl
+	} else {
+		service, err = requestURL(r)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	q := u.Query()
