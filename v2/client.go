@@ -135,14 +135,9 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	var service *url.URL
-	if c.serviceUrl != nil {
-		service = c.serviceUrl
-	} else {
-		service, err = requestURL(r)
-		if err != nil {
-			return "", err
-		}
+	service, err := c.getRequestUrl(r)
+	if err != nil {
+		return "", err
 	}
 
 	q := u.Query()
@@ -160,7 +155,7 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 	}
 
 	if c.sendService {
-		service, err := requestURL(r)
+		service, err := c.getRequestUrl(r)
 		if err != nil {
 			return "", err
 		}
@@ -175,7 +170,7 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 
 // ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
-	service, err := requestURL(r)
+	service, err := c.getRequestUrl(r)
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +179,7 @@ func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (s
 
 // ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
 func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
-	service, err := requestURL(r)
+	service, err := c.getRequestUrl(r)
 	if err != nil {
 		return "", err
 	}
@@ -225,7 +220,7 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 
 // validateTicket performs CAS ticket validation with the given ticket and service.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
-	serviceURL, err := requestURL(service)
+	serviceURL, err := c.getRequestUrl(service)
 	if err != nil {
 		return err
 	}
@@ -326,6 +321,21 @@ func (c *Client) getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie 
 	}
 
 	return cookie
+}
+
+func (c *Client) getRequestUrl(r *http.Request) (*url.URL, error) {
+	var service *url.URL
+	if c.serviceUrl != nil {
+		service = c.serviceUrl
+	} else {
+		var err error
+		service, err = requestURL(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return service, nil
 }
 
 // newSessionId generates a new opaque session identifier for use in the cookie.
