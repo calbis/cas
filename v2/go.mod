@@ -1,4 +1,4 @@
-module github.com/calbis/cas
+module github.com/calbis/cas/v2
 
 go 1.14
 
